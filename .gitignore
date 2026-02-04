@@ -1,0 +1,20 @@
+# --- Python & Backend ---
+__pycache__/
+
+# --- Jupyter Notebooks ---
+*.ipynb
+.ipynb_checkpoints/
+# Ignore raw datasets
+final_dataset/
+
+# Virtual Environments
+venv/
+.venv/
+
+# Environment Variables (Keep secrets safe!)
+.env
+# --- Frontend (Node_modules is heavy!) ---
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
