@@ -1,9 +1,11 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU (Render uses CPU)
+
 import numpy as np
 import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.utils import preprocess_image
-import os
 
 app = FastAPI(
     title="Diabetic Retinopathy Detection API",
@@ -19,7 +21,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_PATH = "app/models/final_dr_model_effnet.keras"
+#  Use absolute path (important on Render)
+MODEL_PATH = os.path.join("app", "models", "final_dr_model_effnet.keras")
 model = None
 
 CLASSES = {
@@ -30,15 +33,16 @@ CLASSES = {
     4: "Proliferative DR"
 }
 
+# 🔹 Load model once at startup
 @app.on_event("startup")
-async def load_model():
+def load_model():
     global model
-    if os.path.exists(MODEL_PATH):
-        print("🔄 Loading EfficientNetB3 model...")
-        model = tf.keras.models.load_model(MODEL_PATH)
-        print("✅ Model loaded successfully!")
-    else:
-        print("❌ Model file not found!")
+    try:
+        print(" Loading EfficientNetB3 model...")
+        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+        print(" Model loaded successfully!")
+    except Exception as e:
+        print(f" Model loading failed: {e}")
 
 @app.get("/")
 def home():
@@ -54,6 +58,8 @@ async def predict(file: UploadFile = File(...)):
 
     try:
         contents = await file.read()
+
+        # Preprocess must match training IMG_SIZE
         img = preprocess_image(contents)
 
         preds = model.predict(img)
@@ -63,10 +69,9 @@ async def predict(file: UploadFile = File(...)):
         return {
             "diagnosis": CLASSES[class_idx],
             "severity_grade": class_idx,
-            "confidence": round(confidence * 100, 2),
-            "raw_probabilities": preds[0].tolist()
+            "confidence": round(confidence * 100, 2)
         }
 
     except Exception as e:
-        print("Prediction error:", e)
-        raise HTTPException(status_code=500, detail="Error processing image.")
+        print(" Prediction error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
