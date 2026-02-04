@@ -1,7 +1,7 @@
 fastapi
 uvicorn
-python-multipart
-tensorflow-cpu  # Use -cpu for lighter deployment (Render/AWS free tier)
+tensorflow
 numpy
 opencv-python-headless
 pillow
+python-multipart
