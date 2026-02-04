@@ -5,7 +5,8 @@ import FileUpload from './components/FileUpload';
 import ResultCard from './components/ResultCard';
 
 // CONFIGURATION: Backend URL
-const API_URL = "http://127.0.0.1:8000/predict"; 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_URL = `${API_BASE_URL}/predict`;
 
 interface PredictionResult {
   diagnosis: string;
