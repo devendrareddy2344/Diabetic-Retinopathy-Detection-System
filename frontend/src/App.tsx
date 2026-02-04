@@ -5,8 +5,7 @@ import FileUpload from './components/FileUpload';
 import ResultCard from './components/ResultCard';
 
 // CONFIGURATION: Backend URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const API_URL = `${API_BASE_URL}/predict`;
+const API_URL = "https://diabetic-retinopathy-detection-system.onrender.com/"; 
 
 interface PredictionResult {
   diagnosis: string;
