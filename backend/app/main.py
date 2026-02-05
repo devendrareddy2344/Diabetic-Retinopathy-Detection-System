@@ -9,11 +9,10 @@ from app.utils import preprocess_image
 
 app = FastAPI(
     title="Diabetic Retinopathy Detection API",
-    description="AI system for retinal disease grading using InceptionV3",
-    version="3.0"
+    description="AI system for retinal disease grading using InceptionV3 (TFLite)",
+    version="4.0"
 )
 
-# Allow frontend access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,11 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔹 Path to your trained Inception model
-MODEL_PATH = os.path.join("app", "models", "final_dr_model_inception.keras")
-model = None
+# 🔹 Path to your TFLite model
+MODEL_PATH = os.path.join("app", "models", "dr_model_compressed.tflite")
 
-# Class labels (must match CLASS_MAP order)
+# TFLite Interpreter variables
+interpreter = None
+input_details = None
+output_details = None
+
 CLASSES = {
     0: "No DR",
     1: "Mild",
@@ -35,47 +37,64 @@ CLASSES = {
     4: "Proliferative DR"
 }
 
-# 🔹 Load model at server startup
+# 🔹 Load TFLite model at startup
 @app.on_event("startup")
 def load_model():
-    global model
+    global interpreter, input_details, output_details
     try:
-        print("Loading InceptionV3 DR model...")
-        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
-        print(" Model loaded successfully!")
+        print("🔄 Loading TFLite DR model...")
+        interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
+        interpreter.allocate_tensors()
+
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+
+        print("✅ TFLite model loaded successfully!")
     except Exception as e:
-        print(f" Model loading failed: {e}")
+        print(f"❌ Model loading failed: {e}")
+
 
 @app.get("/")
 def home():
-    return {"status": "online", "message": "DR Detection API Ready"}
+    return {"status": "online", "message": "DR Detection API Ready (TFLite)"}
+
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image.")
 
-    if model is None:
+    if interpreter is None:
         raise HTTPException(status_code=500, detail="Model not loaded.")
 
     try:
         contents = await file.read()
 
-        # Preprocess image (must match training)
+        # Preprocess image → shape (1, 299, 299, 3)
         img = preprocess_image(contents)
 
-        # Model prediction
-        preds = model.predict(img)
-        class_idx = int(np.argmax(preds[0]))
-        confidence = float(np.max(preds[0]))
+        # Ensure dtype matches model input (usually float32)
+        img = img.astype(input_details[0]['dtype'])
+
+        # Set input tensor
+        interpreter.set_tensor(input_details[0]['index'], img)
+
+        # Run inference
+        interpreter.invoke()
+
+        # Get output tensor
+        preds = interpreter.get_tensor(output_details[0]['index'])[0]
+
+        class_idx = int(np.argmax(preds))
+        confidence = float(np.max(preds))
 
         return {
             "diagnosis": CLASSES[class_idx],
             "severity_grade": class_idx,
             "confidence": round(confidence * 100, 2),
-            "raw_probabilities": preds[0].tolist()
+            "raw_probabilities": preds.tolist()
         }
 
     except Exception as e:
-        print(" Prediction error:", e)
+        print("❌ Prediction error:", e)
         raise HTTPException(status_code=500, detail=str(e))
