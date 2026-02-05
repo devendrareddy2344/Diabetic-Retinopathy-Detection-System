@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Disable GPU (Render uses CPU)
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Force CPU (Render has no GPU)
 
 import numpy as np
 import tensorflow as tf
@@ -9,10 +9,11 @@ from app.utils import preprocess_image
 
 app = FastAPI(
     title="Diabetic Retinopathy Detection API",
-    description="AI system for retinal disease grading using EfficientNetB3",
-    version="2.0"
+    description="AI system for retinal disease grading using InceptionV3",
+    version="3.0"
 )
 
+# Allow frontend access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,10 +22,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#  Use absolute path (important on Render)
-MODEL_PATH = os.path.join("app", "models", "final_dr_model_effnet.keras")
+# 🔹 Path to your trained Inception model
+MODEL_PATH = os.path.join("app", "models", "final_dr_model_inception.keras")
 model = None
 
+# Class labels (must match CLASS_MAP order)
 CLASSES = {
     0: "No DR",
     1: "Mild",
@@ -33,12 +35,12 @@ CLASSES = {
     4: "Proliferative DR"
 }
 
-# 🔹 Load model once at startup
+# 🔹 Load model at server startup
 @app.on_event("startup")
 def load_model():
     global model
     try:
-        print(" Loading EfficientNetB3 model...")
+        print("Loading InceptionV3 DR model...")
         model = tf.keras.models.load_model(MODEL_PATH, compile=False)
         print(" Model loaded successfully!")
     except Exception as e:
@@ -59,9 +61,10 @@ async def predict(file: UploadFile = File(...)):
     try:
         contents = await file.read()
 
-        # Preprocess must match training IMG_SIZE
+        # Preprocess image (must match training)
         img = preprocess_image(contents)
 
+        # Model prediction
         preds = model.predict(img)
         class_idx = int(np.argmax(preds[0]))
         confidence = float(np.max(preds[0]))
@@ -69,7 +72,8 @@ async def predict(file: UploadFile = File(...)):
         return {
             "diagnosis": CLASSES[class_idx],
             "severity_grade": class_idx,
-            "confidence": round(confidence * 100, 2)
+            "confidence": round(confidence * 100, 2),
+            "raw_probabilities": preds[0].tolist()
         }
 
     except Exception as e:
