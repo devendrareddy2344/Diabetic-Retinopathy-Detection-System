@@ -31,7 +31,7 @@ export default function Header() {
         {/* Right Side: Optional Info */}
         <div className="hidden md:block text-right">
           <p className="text-sm font-semibold opacity-90">Deep Learning Powered</p>
-          <p className="text-xs text-blue-300">ResNet50 Model</p>
+          <p className="text-xs text-blue-300">InceptionV3 Model</p>
         </div>
 
       </div>
