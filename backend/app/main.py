@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Force CPU (Render has no GPU)
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1" 
 
 import numpy as np
 import tensorflow as tf
@@ -42,16 +42,16 @@ CLASSES = {
 def load_model():
     global interpreter, input_details, output_details
     try:
-        print("🔄 Loading TFLite DR model...")
+        print(" Loading TFLite DR model...")
         interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
         interpreter.allocate_tensors()
 
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
 
-        print("✅ TFLite model loaded successfully!")
+        print(" TFLite model loaded successfully!")
     except Exception as e:
-        print(f"❌ Model loading failed: {e}")
+        print(f" Model loading failed: {e}")
 
 
 @app.get("/")
@@ -96,5 +96,5 @@ async def predict(file: UploadFile = File(...)):
         }
 
     except Exception as e:
-        print("❌ Prediction error:", e)
+        print(" Prediction error:", e)
         raise HTTPException(status_code=500, detail=str(e))
