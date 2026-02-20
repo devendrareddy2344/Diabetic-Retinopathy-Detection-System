@@ -2,6 +2,8 @@
 
 An end-to-end Deep Learning application designed to detect and grade Diabetic Retinopathy (DR) from retinal fundus images. This system leverages a fine-tuned **InceptionV3** model, served via a high-performance **FastAPI** backend, and accessible through a modern **React + TypeScript** frontend.
 
+![System Workflow](./workflow.jpeg)
+
 ## 🚀 Features
 
 ### 🧠 AI-Powered Diagnosis
@@ -87,3 +89,37 @@ diabetic-retinopathy-system/
 │   └── requirements.txt
 │
 └── README.md                 # Project Documentation
+```
+
+## 🚀 Getting Started
+
+### 1️⃣ Backend Setup (FastAPI)
+```bash
+# Navigate to backend directory
+cd backend
+
+# Create a virtual environment
+python -m venv venv
+source venv/bin/scripts/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the server
+uvicorn app.main:app --reload
+```
+
+### 2️⃣ Frontend Setup (React + Vite)
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+## 📄 License
+This project is for educational and research purposes in the field of medical AI.
